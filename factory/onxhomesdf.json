@@ -1,0 +1,9 @@
+{
+	"name": "onxhomesdf",
+	"location": "centralus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "fa7e9a0d-71f5-49c6-9b33-9f59f98ef4ec",
+		"tenantId": "c295bf93-5b90-40a3-9039-454cb1192219"
+	}
+}
