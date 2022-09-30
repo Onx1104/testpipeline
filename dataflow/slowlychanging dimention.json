@@ -1,0 +1,106 @@
+{
+	"name": "slowlychanging dimention",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlTable2",
+						"type": "DatasetReference"
+					},
+					"name": "product"
+				},
+				{
+					"dataset": {
+						"referenceName": "dimproduct",
+						"type": "DatasetReference"
+					},
+					"name": "dimproduct"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlTable3",
+						"type": "DatasetReference"
+					},
+					"name": "loadintodimproduct"
+				}
+			],
+			"transformations": [
+				{
+					"name": "findnewrecords"
+				},
+				{
+					"name": "seperatematchedunmatcheddata"
+				},
+				{
+					"name": "genaratepkey"
+				},
+				{
+					"name": "deleteunwantecolumns"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          pid as integer,",
+				"          pname as string,",
+				"          modified_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> product",
+				"source(output(",
+				"          pkey as integer,",
+				"          pid as integer,",
+				"          pname as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> dimproduct",
+				"product, dimproduct lookup(product@pid == dimproduct@pid,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> findnewrecords",
+				"findnewrecords split(isMatch(),",
+				"     disjoint: false) ~> seperatematchedunmatcheddata@(matched, unmatched)",
+				"deleteunwantecolumns keyGenerate(output(surrogatekey as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> genaratepkey",
+				"seperatematchedunmatcheddata@unmatched select(mapColumn(",
+				"          pid = seperatematchedunmatcheddata@unmatched@pid,",
+				"          pname = seperatematchedunmatcheddata@unmatched@pname,",
+				"          modified_date,",
+				"          pkey,",
+				"          pid = seperatematchedunmatcheddata@unmatched@pid,",
+				"          pname = seperatematchedunmatcheddata@unmatched@pname",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> deleteunwantecolumns",
+				"genaratepkey sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          pkey as integer,",
+				"          pid as integer,",
+				"          pname as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          pkey = surrogatekey,",
+				"          pid,",
+				"          pname",
+				"     )) ~> loadintodimproduct"
+			]
+		}
+	}
+}
