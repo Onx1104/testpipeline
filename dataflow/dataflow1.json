@@ -19,8 +19,26 @@
 					"name": "dimcustomer"
 				}
 			],
-			"sinks": [],
-			"transformations": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dim_customer",
+						"type": "DatasetReference"
+					},
+					"name": "sink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lookup"
+				},
+				{
+					"name": "derivedColumn"
+				},
+				{
+					"name": "alterRow"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          cid as integer,",
@@ -42,7 +60,40 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> dimcustomer"
+				"     format: 'table') ~> dimcustomer",
+				"customer, dimcustomer lookup(customer@cid == dimcustomer@cid,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup",
+				"lookup derive(insertdate = iif(isNull(insertdate),currentDate(),insertdate),",
+				"          updatedate = currentDate()) ~> derivedColumn",
+				"derivedColumn alterRow(upsertIf(true())) ~> alterRow",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          ckey as integer,",
+				"          cid as integer,",
+				"          cname as string,",
+				"          location as string,",
+				"          insertdate as date,",
+				"          updatedate as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['cid'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          cid = customer@cid,",
+				"          cname = customer@cname,",
+				"          location = customer@location,",
+				"          insertdate,",
+				"          updatedate",
+				"     )) ~> sink"
 			]
 		}
 	}
