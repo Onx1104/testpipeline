@@ -1,0 +1,43 @@
+{
+	"name": "dim_customer",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "targetdatabase",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "ckey",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "cid",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "cname",
+				"type": "varchar"
+			},
+			{
+				"name": "location",
+				"type": "varchar"
+			},
+			{
+				"name": "insertdate",
+				"type": "date"
+			},
+			{
+				"name": "updatedate",
+				"type": "date"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "dim_customer"
+		}
+	}
+}
